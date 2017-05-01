@@ -57,8 +57,10 @@ endif
 pi_kheaders : 
 	@if [ ! -d $(HOST_KHEADERS_DIR) ] ; then \
 	   echo "kernel headers do not exist, fetching and installing kernel headers..."; \
-	   sudo apt-get update; \
-	   sudo apt-get install raspberrypi-kernel-headers; \
+	   sudo wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/bin/rpi-source && sudo chmod +x /usr/bin/rpi-source && /usr/bin/rpi-source -q --tag-update; \
+	   sudo apt-get install bc; \
+       rpi-source; \
+       sudo apt-get update; \
 	fi
 
 MsFwLoader=""
