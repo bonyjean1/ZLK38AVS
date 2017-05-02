@@ -214,7 +214,6 @@ int hal_port_rw(void *pHandle,void *pPortAccess)
         }
         xfers[msgnum].rx_buf = pPort->pDst;
         xfers[msgnum].len = pPort->nread;
-        xfers[msgnum].speed_hz = 500000;
 
         msgnum++;
 
