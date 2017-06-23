@@ -17,3 +17,4 @@ Please see [Howto](https://github.com/MicrosemiVoiceProcessing/ZLK38AVS/wiki/how
   * [ZLK38AVS Product Brief](https://github.com/MicrosemiVoiceProcessing/ZLK38AVS/blob/master/docs/Microsemi_ZLK38AVS_ProductBrief.pdf) &#x1f517;
   * [ZLK38AVS Quick Start Guide](https://github.com/MicrosemiVoiceProcessing/ZLK38AVS/blob/master/docs/Microsemi_ZLK38AVS_Quickstart.pdf) &#x1f517;
   * [ZLK38AVS User Guide](https://github.com/MicrosemiVoiceProcessing/ZLK38AVS/blob/master/docs/Microsemi_ZLK38AVS_User_Guide.pdf) &#x1f517;
+  * [ZLE38AVS Hardware User Guide](https://github.com/MicrosemiVoiceProcessing/ZLK38AVS/blob/master/docs/Microsemi_ZLE38AVS_Hardware_User_Guide.pdf) &#x1f517;
