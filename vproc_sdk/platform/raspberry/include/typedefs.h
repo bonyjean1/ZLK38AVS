@@ -35,6 +35,7 @@
 
 #include <linux/types.h>
 #include <stddef.h>
+#include <linux/string.h>
 
 #ifndef NULL
     #define NULL (0)
