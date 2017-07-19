@@ -64,6 +64,8 @@ avs_git:
 
 release: release_sub
 
+swig:
+	$(MAKE) -C $(ROOTDIR)/../apps/python/wrapper
 	
 help:
 	@echo "-----------------------------------------------------------------------------------------------" 
