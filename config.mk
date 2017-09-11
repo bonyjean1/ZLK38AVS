@@ -21,7 +21,7 @@ SENSORY_ALEXA_ONLINE_REPOSITORY =https://github.com/Sensory/alexa-rpi.git
 AMAZON_AVS_LOCAL_DIR ?=$(ROOTDIR)/../amazon_avs
 AMAZON_AVS_FILE_PATH=$(AMAZON_AVS_LOCAL_DIR)/automated_install.sh
 
-
+HOST_PI_IMAGE_VER :=`cat /etc/os-release`
 HOST_KHEADERS_DIR =/lib/modules/`uname -r`/build
 HOST_MODULES_FILE_PATH =/etc/modules
 HOST_BOOTCFG_FILE_PATH =/boot/config.txt
@@ -30,6 +30,8 @@ HOST_USER_APPS_START_CFG_FILE_PATH =/etc/rc.local
 HOST_USER_PROF_START_CFG_FILE_PATH :=/home/$(platformUser)/.profile
 HOST_USER_HOME_DIR :=/home/$(platformUser)
 MSCC_LOCAL_APPS_PATH =$(ROOTDIR)/../apps
+HOST_SAMBA_CFG_PATH =/etc/samba/smb.conf
+HOST_SAMBA_SHARE_PATH = $(HOST_USER_HOME_DIR)/shares
 
 MSCC_SND_COD_MOD=snd-soc-zl380xx
 MSCC_SND_MAC_MOD=snd-soc-microsemi-dac
@@ -54,14 +56,19 @@ endif
 
 # if the raspberrypi kernel headers needed to compile the sdk do not exist fetch them
 .PHONY: pi_kheaders alexa_install
-pi_kheaders : 
-	@if [ ! -d $(HOST_KHEADERS_DIR) ] ; then \
+pi_kheaders :
+	@if cat /etc/os-release | grep -q 'stretch'; then \
+	   echo "kernel headers do not exist, fetching and installing kernel headers..."; \
+	   sudo apt-get update; \
+	   sudo apt-get install raspberrypi-kernel-headers; \
+		else \
 	   echo "kernel headers do not exist, fetching and installing kernel headers..."; \
 	   sudo wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/bin/rpi-source && sudo chmod +x /usr/bin/rpi-source && /usr/bin/rpi-source -q --tag-update; \
 	   sudo apt-get install bc; \
-       rpi-source; \
-       sudo apt-get update; \
+	   rpi-source; \
+	   sudo apt-get update; \
 	fi
+	
 
 MsFwLoader=""
 
@@ -223,7 +230,7 @@ alexa_install: amazon_sub
 	read -p "enter the Client ID obtained from Amazon:" AvsClientid; \
 	echo "You entered AVS Client ID: $$AvsClientid "; \
 	read -p "enter Client Secret obtained from Amazon :" AvsSecreid; \
-	echo "You entered AVS Client secret : $$AvsSecreid "; \
+	echo "You entered AVS Client secret : $$AvsClientid "; \
 	sudo sed -i "s/ProductID=.*/ProductID=$$AvsDevid/" $(AMAZON_AVS_FILE_PATH); \
 	sudo sed -i "s/ClientID=.*/ClientID=$$AvsClientid/" $(AMAZON_AVS_FILE_PATH); \
 	sudo sed -i "s/ClientSecret=.*/ClientSecret=$$AvsSecreid/" $(AMAZON_AVS_FILE_PATH); \
@@ -243,9 +250,8 @@ soundcfg:
 	@if [ -f $(HOST_USER_HOME_DIR)/.asoundrc.backup ]; then \
 	   exit 0 ; \
 	fi	
-	@sudo cp $(HOST_USER_HOME_DIR)/.asoundrc $(HOST_USER_HOME_DIR)/.asoundrc.backup	
-	@if [ -f /home/$(platformUser)/.asoundrc ]; then \
-       rm /home/$(platformUser)/.asoundrc ; \
+	
+	@if [ -f /home/$(platformUser)/.asoundrc ]; then sudo cp $(HOST_USER_HOME_DIR)/.asoundrc $(HOST_USER_HOME_DIR)/.asoundrc.backup; rm /home/$(platformUser)/.asoundrc ; \
 	fi
 	@printf "\npcm.dmixed {\n    ipc_key 1025\n    type dmix\n    slave {\n        pcm \"hw:sndmicrosemidac,0\"\n        channels 2\n        rate 16000\n    }\n}\n" >> $(HOST_USER_HOME_DIR)/.asoundrc
 	@printf "\npcm.dsnooped {\n    ipc_key 1027\n    type dsnoop\n    slave {\n        pcm \"hw:sndmicrosemidac,0\"\n        channels 1\n        rate 16000\n    }\n}\n" >> $(HOST_USER_HOME_DIR)/.asoundrc
@@ -254,12 +260,27 @@ soundcfg:
 	@printf "\nctl.!default {\n    type hw\n    card sndmicrosemidac\n}\n" >> $(HOST_USER_HOME_DIR)/.asoundrc
 	@sudo cp $(HOST_USER_HOME_DIR)/.asoundrc /etc/asound.conf	
 	
-samba_sh:
+samba:
 	sudo apt-get update
 	sudo apt-get install samba samba-common-bin
 	sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.old
 	sudo smbpasswd -a $(platformUser)
-	@echo "To configure samba see links: http://elinux.org/R-Pi_NAS"
+	@if [ ! -d $(HOST_SAMBA_SHARE_PATH) ] ; then \
+	   mkdir $(HOST_SAMBA_SHARE_PATH); \
+	   sudo chown -R root:users $(HOST_SAMBA_SHARE_PATH); \
+	   sudo chmod -R ug=rwx,o=rx $(HOST_SAMBA_SHARE_PATH); \
+	fi
+	@sudo sed -i "s/server role = standalone server/security = user \n   server role = standalone/" $(HOST_SAMBA_CFG_PATH); 
+	@sudo sed -i "s/read only = yes/read only = no/g" $(HOST_SAMBA_CFG_PATH); 
+	@echo "[shares]" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   comment = Public Storage" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   path = $(HOST_SAMBA_SHARE_PATH)" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   valid users = users" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   force group = users" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   create mask = 0660" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   directory mask = 0771" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	@echo "   read only = no" | sudo tee -a $(HOST_SAMBA_CFG_PATH);
+	sudo /etc/init.d/samba restart
 
 message:
 	@echo "--****************************************************************************--" 
